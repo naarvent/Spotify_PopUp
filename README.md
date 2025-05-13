@@ -68,6 +68,14 @@ If you want this widget to run when your PC starts:
 
 3. Place a shortcut of the .exe inside that folder.
 
+## 📁 File Structure and Safety
+
+All generated files such as `.cache` (used for Spotify API credentials) will be stored inside:
+Documents/
+└── naarvents projects/
+└── Spotify Widget/
+This ensures that the widget does not interfere with other Spotify-based scripts or tools you might be using. The folder is created automatically on first run.
+
 
 ## 📄 License
 This widget is free to use and modify. If you share it, consider crediting this repo.
@@ -92,6 +100,12 @@ This widget is free to use and modify. If you share it, consider crediting this 
       import keyboard
       from PyQt5 import QtWidgets, QtGui, QtCore
       
+      # Create secure project folder in Documents
+      documents_path = QtCore.QStandardPaths.writableLocation(QtCore.QStandardPaths.DocumentsLocation)
+      widget_dir = os.path.join(documents_path, "naarvent's projects", "SpotifyWidget")
+      os.makedirs(widget_dir, exist_ok=True)
+      widget_cache_path = os.path.join(widget_dir, ".cache")
+      
       
       class SpotifyWidget(QtWidgets.QWidget):
           def __init__(self, spotify):
@@ -100,16 +114,16 @@ This widget is free to use and modify. If you share it, consider crediting this 
               self.dragging = False
               self.last_click_time = []
       
-              # Fade animation
+              # Fade animation setup
               self.animation = QtCore.QPropertyAnimation(self, b"windowOpacity")
               self.animation.setDuration(400)
       
-              # Auto-hide timer
+              # Timer to auto-hide the widget after some time
               self.hide_timer = QtCore.QTimer()
-              self.hide_timer.setInterval(1000)
+              self.hide_timer.setInterval(1000)  # Widget visible for 1 second unless mouse is over it
               self.hide_timer.timeout.connect(self.fade_out)
       
-              # Window settings
+              # Window styling and behavior
               self.setWindowFlags(
                   QtCore.Qt.FramelessWindowHint |
                   QtCore.Qt.WindowStaysOnTopHint |
@@ -122,7 +136,7 @@ This widget is free to use and modify. If you share it, consider crediting this 
       
               self.init_ui()
       
-              # Set default position (bottom right)
+              # Position: bottom right of screen
               screen = QtWidgets.QApplication.primaryScreen().availableGeometry()
               self.default_pos = QtCore.QPoint(screen.width() - 420, screen.height() - 140)
               self.move(self.default_pos)
@@ -165,7 +179,7 @@ This widget is free to use and modify. If you share it, consider crediting this 
               layout.setContentsMargins(0, 0, 0, 0)
               layout.setSpacing(0)
       
-              # Left section (album cover)
+              # Left side (album cover)
               left = QtWidgets.QWidget()
               left.setFixedWidth(120)
               left.setStyleSheet("background-color: #000000; border-top-left-radius: 20px; border-bottom-left-radius: 20px;")
@@ -175,36 +189,36 @@ This widget is free to use and modify. If you share it, consider crediting this 
       
               self.album_cover = QtWidgets.QLabel()
               self.album_cover.setFixedSize(80, 80)
-              self.album_cover.setPixmap(QtGui.QPixmap(80, 80).filled(QtGui.QColor("gray")))
+              pixmap = QtGui.QPixmap(80, 80)
+              pixmap.fill(QtGui.QColor("gray"))
+              self.album_cover.setPixmap(pixmap)
               left_layout.addWidget(self.album_cover)
       
-              # Vertical white separator
+              # Separator line
               separator = QtWidgets.QFrame()
               separator.setFrameShape(QtWidgets.QFrame.VLine)
               separator.setLineWidth(5)
               separator.setStyleSheet("color: white;")
               separator.setFixedHeight(110)
       
-              # Right section (info + progress)
+              # Right section (text + progress bar)
               right = QtWidgets.QWidget()
               right.setStyleSheet("background-color: #000000; border-top-right-radius: 20px; border-bottom-right-radius: 20px;")
               right_layout = QtWidgets.QVBoxLayout(right)
               right_layout.setContentsMargins(20, 12, 20, 12)
               right_layout.setSpacing(2)
       
-              # Track name
               self.track_name = QtWidgets.QLabel("Track Name")
               self.track_name.setFont(QtGui.QFont("Segoe UI", 11, QtGui.QFont.Bold))
               self.track_name.setStyleSheet("color: white;")
               right_layout.addWidget(self.track_name)
       
-              # Artist name with decoration
               self.artist_label = QtWidgets.QLabel("| ●  Artist")
               self.artist_label.setFont(QtGui.QFont("Segoe UI", 10))
               self.artist_label.setStyleSheet("color: #cccccc; padding-left: 20px;")
               right_layout.addWidget(self.artist_label)
       
-              # Progress bar and time display
+              # Progress section
               progress_layout = QtWidgets.QHBoxLayout()
               progress_layout.setContentsMargins(15, 6, 15, 0)
       
@@ -281,7 +295,6 @@ This widget is free to use and modify. If you share it, consider crediting this 
               progress_layout.addWidget(self.total_time)
               right_layout.addLayout(progress_layout)
       
-              # Combine sections
               layout.addWidget(left)
               layout.addWidget(separator)
               layout.addWidget(right)
@@ -408,21 +421,20 @@ This widget is free to use and modify. If you share it, consider crediting this 
       
       
       def run_app():
-          cache_path = ".cache"
           try:
               auth = SpotifyOAuth(
                   client_id="YOUR_CLIENT_ID",
                   client_secret="YOUR_CLIENT_SECRET",
                   redirect_uri="http://127.0.0.1:8000/callback",
                   scope="user-read-playback-state user-read-currently-playing user-modify-playback-state",
-                  cache_path=cache_path
+                  cache_path=widget_cache_path
               )
               spotify = spotipy.Spotify(auth_manager=auth)
       
           except spotipy.SpotifyOauthError as e:
               print("❌ Authentication error:", e)
-              if os.path.exists(cache_path):
-                  os.remove(cache_path)
+              if os.path.exists(widget_cache_path):
+                  os.remove(widget_cache_path)
                   print("🗑 Cache cleared. Please run again to reauthorize.")
               else:
                   print("ℹ No cache found to delete.")
@@ -447,4 +459,5 @@ This widget is free to use and modify. If you share it, consider crediting this 
       
       if __name__ == "__main__":
           run_app()
+
 
